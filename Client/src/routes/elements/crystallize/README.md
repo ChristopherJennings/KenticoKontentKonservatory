@@ -42,7 +42,7 @@ Crystallize is a popular PIM that can provide benefits to Kontent projects.
 
 1. Clone this repository:
    - Locally, then run `npm i; npm run build; npm run start`.
-   - On Vercel: [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/git/external?repository-url=https%3A%2F%2Fgithub.com%2Fyuriys-kentico%2FKenticoKontentKonservatory%2F).
+   - On Vercel: [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/git/external?repository-url=https%3A%2F%2Fgithub.com%2Fyuriys-kentico%2FKenticoKontentKonservatory%2F). Make sure that `FRAMEWORK PRESET` is _Sapper_ and `ROOT DIRECTORY` is _./_ (not _./Client_)..
 1. In Kontent, choose an existing content type or create a new one by clicking `Create new`.
 1. Click `Custom element` on the right to add a new element.
 1. For **Hosted code URL (HTTPS)**, enter _{HOST FROM STEP 1}/elements/crystallize_.
