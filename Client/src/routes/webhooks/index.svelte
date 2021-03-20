@@ -12,6 +12,9 @@
   import { Webhook } from "../../shared/models/Webhook";
   import { Icon } from "../../shared/models/Icon";
   import type { IIcon } from "../../shared/models/Icon";
+  import { Translation } from "../../shared/models/Translation";
+  import type { ISite } from "../../shared/models/Site";
+  import { Site } from "../../shared/models/Site";
 
   export const preload: Preload<
     {
@@ -44,7 +47,27 @@
         .toPromise()
     ).items;
 
+    const translations = (
+      await deliveryClient(session.kontent)
+        .items<Translation>()
+        .type(Translation.codename)
+        .toPromise()
+    ).items.reduce((translations, translation) => {
+      translations[translation.system.codename] = translation.content.value;
+      return translations;
+    }, {});
+
+    session.kontent.translations = { en_us: { translation: translations } };
+
+    const site = (
+      await deliveryClient(session.kontent)
+        .item<Site>(Site.codename)
+        .depthParameter(6)
+        .toPromise()
+    ).item;
+
     return {
+      site: site.getModel(),
       webhooks: webhooks.map((webhook) => webhook.getModel()),
       components,
       icons: icons.map((icon) => icon.getModel()),
@@ -59,6 +82,7 @@
   import { translate } from "../../utilities/translateStore";
   import { stores } from "@sapper/app";
 
+  export let site: ISite;
   export let webhooks: IWebhook[];
   export let components: Map<string, ICode>;
   export let icons: IIcon[];
@@ -121,9 +145,7 @@
       }
 
       if (
-        webhook.tags.some(
-          (tag) => matches(tag.name) || matches(tag.synonyms)
-        )
+        webhook.tags.some((tag) => matches(tag.name) || matches(tag.synonyms))
       ) {
         return true;
       }
@@ -144,12 +166,17 @@
   const t = translate($session.kontent.translations);
 </script>
 
+<svelte:head>
+  <title>{site.name}</title>
+</svelte:head>
+
+<h1><a href="/">{site.name}</a></h1>
 <section>
   <div class="list">
     <div class="filter">
       <input
         type="text"
-        placeholder={$t('filter_webhooks')}
+        placeholder={$t("filter_webhooks")}
         bind:value={filter} />
     </div>
     {#each sortedWebhooks as customElement (customElement.name)}
@@ -162,13 +189,17 @@
           on:click={() => {
             if (selectedWebhook !== customElement) {
               selectedWebhook = customElement;
-              history.replaceState(undefined, undefined, `${window.location.origin}${window.location.pathname}#${customElement.codename}`);
+              history.replaceState(
+                undefined,
+                undefined,
+                `${window.location.origin}${window.location.pathname}#${customElement.codename}`
+              );
             }
           }}>
           <h2 class="name">{customElement.name}</h2>
           {#if selectedWebhook == customElement}
             {#each sortArray(customElement.tags, {
-              by: ['name'],
+              by: ["name"],
             }) as tag (tag.codename)}
               <span class="tag">{tag.name}</span>
             {/each}
@@ -177,9 +208,8 @@
               use:replaceComponents={{ components, replaceMap }}>
               {@html customElement.description}
             </div>
-            <a
-              class="badge"
-              href={customElement.github}>{@html gitHubIcon.svg}{$t('github')}</a>
+            <a class="badge" href={customElement.github}
+              >{@html gitHubIcon.svg}{$t("github")}</a>
           {/if}
         </div>
         <div class="image" />
@@ -189,6 +219,18 @@
 </section>
 
 <style>
+  h1 {
+    text-align: center;
+    font-size: 5em;
+    text-transform: uppercase;
+    font-weight: 700;
+    margin: 0 0 0.5em 0;
+  }
+
+  h1 a {
+    text-decoration: none;
+  }
+
   .filter {
     display: flex;
   }

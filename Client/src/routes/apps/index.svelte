@@ -12,6 +12,8 @@
   import { App } from "../../shared/models/App";
   import { Icon } from "../../shared/models/Icon";
   import type { IIcon } from "../../shared/models/Icon";
+  import type { ISite } from "../../shared/models/Site";
+  import { Site } from "../../shared/models/Site";
 
   export const preload: Preload<
     {
@@ -44,7 +46,27 @@
         .toPromise()
     ).items;
 
+    const translations = (
+      await deliveryClient(session.kontent)
+        .items<Translation>()
+        .type(Translation.codename)
+        .toPromise()
+    ).items.reduce((translations, translation) => {
+      translations[translation.system.codename] = translation.content.value;
+      return translations;
+    }, {});
+
+    session.kontent.translations = { en_us: { translation: translations } };
+
+    const site = (
+      await deliveryClient(session.kontent)
+        .item<Site>(Site.codename)
+        .depthParameter(6)
+        .toPromise()
+    ).item;
+
     return {
+      site: site.getModel(),
       apps: apps.map((webhook) => webhook.getModel()),
       components,
       icons: icons.map((icon) => icon.getModel()),
@@ -58,7 +80,9 @@
   import Code from "../../shared/components/code.svelte";
   import { translate } from "../../utilities/translateStore";
   import { stores } from "@sapper/app";
+  import { Translation } from "../../shared/models/Translation";
 
+  export let site: ISite;
   export let apps: IApp[];
   export let components: Map<string, ICode>;
   export let icons: IIcon[];
@@ -140,6 +164,11 @@
   const t = translate($session.kontent.translations);
 </script>
 
+<svelte:head>
+  <title>{site.name}</title>
+</svelte:head>
+
+<h1><a href="/">{site.name}</a></h1>
 <section>
   <div class="list">
     <div class="filter">
@@ -185,6 +214,18 @@
 </section>
 
 <style>
+  h1 {
+    text-align: center;
+    font-size: 5em;
+    text-transform: uppercase;
+    font-weight: 700;
+    margin: 0 0 0.5em 0;
+  }
+
+  h1 a {
+    text-decoration: none;
+  }
+
   .filter {
     display: flex;
   }

@@ -3,7 +3,7 @@
   import translations from "./_resources";
   import { json2csv } from "json-2-csv";
   import { translate } from "../../../utilities/translateStore";
-  import {
+  import type {
     ContentItem,
     ContentTypeSystemAttributes,
     DeliveryError,
@@ -12,7 +12,7 @@
   } from "@kentico/kontent-delivery";
   import { delay, fromPairs, replace } from "lodash";
   import Filter from "../../../shared/components/filter.svelte";
-  import { localStore } from "../../../utilities/localStore";
+  import { localStorage } from "../../../utilities/localStore";
   import { fade } from "svelte/transition";
   import jwt_decode from "jwt-decode";
 
@@ -97,7 +97,7 @@
 
   $: savedExport =
     superTypes &&
-    localStore<{
+    localStorage<{
       [key: string]: {
         elementCodenames: string[];
         previewUrl: string;

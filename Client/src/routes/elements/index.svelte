@@ -44,6 +44,18 @@
         .toPromise()
     ).items;
 
+        const translations = (
+      await deliveryClient(session.kontent)
+        .items<Translation>()
+        .type(Translation.codename)
+        .toPromise()
+    ).items.reduce((translations, translation) => {
+      translations[translation.system.codename] = translation.content.value;
+      return translations;
+    }, {});
+
+    session.kontent.translations = { en_us: { translation: translations } };
+
     return {
       customElements: customElements.map((element) => element.getModel()),
       components,

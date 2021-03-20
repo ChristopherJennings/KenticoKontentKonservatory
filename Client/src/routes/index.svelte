@@ -1,13 +1,38 @@
-<script lang="ts">
-  import { stores } from "@sapper/app";
+<script context="module" lang="ts">
+  import type { Preload } from "@sapper/app";
   import type { ISession } from "../shared/kontent";
+  import { deliveryClient } from "../shared/kontent";
+  import type { ISite } from "../shared/models/Site";
+  import { Site } from "../shared/models/Site";
 
-  const { session } = stores<ISession>();
+  export const preload: Preload<{}, ISession> = async function (
+    this,
+    page,
+    session
+  ) {
+    const site = (
+      await deliveryClient(session.kontent)
+        .item<Site>(Site.codename)
+        .depthParameter(6)
+        .toPromise()
+    ).item;
+
+    return { site: site.getModel() };
+  };
 </script>
 
+<script lang="ts">
+  export let site: ISite;
+</script>
+
+<svelte:head>
+  <title>{site.name}</title>
+</svelte:head>
+
+<h1><a href="/">{site.name}</a></h1>
 <section>
   <div class="list">
-    {#each $session.kontent.site.routes as route}
+    {#each site.routes as route}
       <a class="item" href={route.route}>
         <div>
           {#if route.icon}
@@ -21,6 +46,18 @@
 </section>
 
 <style>
+  h1 {
+    text-align: center;
+    font-size: 5em;
+    text-transform: uppercase;
+    font-weight: 700;
+    margin: 0 0 0.5em 0;
+  }
+
+  h1 a {
+    text-decoration: none;
+  }
+
   section {
     flex-direction: row;
   }
