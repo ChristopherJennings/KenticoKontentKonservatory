@@ -45,7 +45,7 @@ This element requires this backend function:
 
 1. Clone this repository:
    - Locally, then run `npm i; npm run build; npm run start`.
-   - On Vercel: [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/git/external?repository-url=https%3A%2F%2Fgithub.com%2Fyuriys-kentico%2FKenticoKontentKonservatory%2F). Make sure that `FRAMEWORK PRESET` is _Sapper_ and `ROOT DIRECTORY` is _./_ (not _./Client_)..
+   - On Vercel: [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/git/external?repository-url=https%3A%2F%2Fgithub.com%2Fyuriys-kentico%2FKenticoKontentKonservatory%2F). Make sure that `FRAMEWORK PRESET` is _Sapper_ and `ROOT DIRECTORY` is _./_ (not _./Client_).
 1. Follow [the steps here](https://developers.hubspot.com/docs/api/creating-an-app) to create an app and get a client secret and client ID and install it on a HubSpot account.
 1. Open `Functions.sln` in Visual Studio and publish the `Functions` project to an Azure Function App with these required environment variables:
    - **HubSpot:ClientSecret** : the client secret from step 2.
