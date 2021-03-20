@@ -23,6 +23,15 @@
     },
     ISession
   > = async function (this, page, session) {
+    if (!session.kontent.projectId) {
+      return {
+        site: { name: "", routes: [] },
+        apps: [],
+        components: [],
+        icons: [],
+      };
+    }
+
     const components = new Map<string, ICode>();
     const richTextResolver = extractComponents(
       components,
@@ -171,9 +180,14 @@
 <h1><a href="/">{site.name}</a></h1>
 <section>
   <div class="list">
-    <div class="filter">
-      <input type="text" placeholder={$t("filter_apps")} bind:value={filter} />
-    </div>
+    {#if apps.length > 0}
+      <div class="filter">
+        <input
+          type="text"
+          placeholder={$t("filter_apps")}
+          bind:value={filter} />
+      </div>
+    {/if}
     {#each sortedApps as customElement (customElement.name)}
       <div
         class="group"

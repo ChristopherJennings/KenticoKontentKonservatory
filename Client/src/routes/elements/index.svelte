@@ -21,6 +21,15 @@
     },
     ISession
   > = async function (this, page, session) {
+    if (!session.kontent.projectId) {
+      return {
+        site: { name: "", routes: [] },
+        customElements: [],
+        components: [],
+        icons: [],
+      };
+    }
+
     const components = new Map<string, ICode>();
     const richTextResolver = extractComponents(
       components,
@@ -44,7 +53,7 @@
         .toPromise()
     ).items;
 
-        const translations = (
+    const translations = (
       await deliveryClient(session.kontent)
         .items<Translation>()
         .type(Translation.codename)
@@ -74,6 +83,7 @@
   import jwt_decode from "jwt-decode";
   import wretch from "wretch";
   import Filter from "../../shared/components/filter.svelte";
+  import { Translation } from "../../shared/models/Translation";
 
   export let customElements: ICustomElement[];
   export let components: Map<string, ICode>;
@@ -443,12 +453,14 @@
     </div>
   {/if}
   <div class="list">
-    <div class="filter">
-      <input
-        type="text"
-        placeholder={$t("filter_custom_elements")}
-        bind:value={filter} />
-    </div>
+    {#if customElements.length > 0}
+      <div class="filter">
+        <input
+          type="text"
+          placeholder={$t("filter_custom_elements")}
+          bind:value={filter} />
+      </div>
+    {/if}
     {#each sortedElements as customElement (customElement.name)}
       <div
         class="group"

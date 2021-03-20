@@ -10,6 +10,10 @@
     page,
     session
   ) {
+    if (!session.kontent.projectId) {
+      return { site: { name: "", routes: [] } };
+    }
+
     const site = (
       await deliveryClient(session.kontent)
         .item<Site>(Site.codename)

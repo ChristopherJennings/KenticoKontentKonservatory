@@ -24,6 +24,15 @@
     },
     ISession
   > = async function (this, page, session) {
+    if (!session.kontent.projectId) {
+      return {
+        site: { name: "", routes: [] },
+        webhooks: [],
+        components: [],
+        icons: [],
+      };
+    }
+
     const components = new Map<string, ICode>();
     const richTextResolver = extractComponents(
       components,
@@ -173,12 +182,14 @@
 <h1><a href="/">{site.name}</a></h1>
 <section>
   <div class="list">
-    <div class="filter">
-      <input
-        type="text"
-        placeholder={$t("filter_webhooks")}
-        bind:value={filter} />
-    </div>
+    {#if webhooks.length > 0}
+      <div class="filter">
+        <input
+          type="text"
+          placeholder={$t("filter_webhooks")}
+          bind:value={filter} />
+      </div>
+    {/if}
     {#each sortedWebhooks as customElement (customElement.name)}
       <div
         class="group"
