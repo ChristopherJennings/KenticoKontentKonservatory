@@ -1,9 +1,10 @@
 <script lang="ts">
   import { createEventDispatcher } from "svelte";
-  import { translate } from "../../../utilities/translateStore";
-  import translations from "./_resources";
-  import sharedTranslations from "../_shared/resources";
+
   import type { IListItem } from "./index.svelte";
+  import { translate } from "../../../shared/stores/translate";
+  import sharedTranslations from "../../../shared/components/customElement/resources";
+  import translations from "./_resources";
 
   export let item: IListItem;
 
@@ -13,7 +14,7 @@
     dispatch("delete", item);
   };
 
-  const t = translate(translations, [sharedTranslations]);
+  const t = translate([translations, sharedTranslations]);
 </script>
 
 <div class="group">

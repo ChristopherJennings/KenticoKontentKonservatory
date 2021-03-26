@@ -1,15 +1,16 @@
 <script lang="ts">
-  import CustomElement from "./../_shared/customElement/customElement.svelte";
-  import { translate } from "../../../utilities/translateStore";
-  import Loading from "../../../shared/loading.svelte";
-  import translations from "./_resources";
-  import sharedTranslations from "../_shared/resources";
   import { fade } from "svelte/transition";
-  import Invalid from "../_shared/customElement/invalid.svelte";
-  import type { IHubSpotForm } from "./_hubSpot";
   import { onMount } from "svelte";
   import wretch from "wretch";
-  import { localStorage } from "../../../utilities/localStore";
+
+  import type { IHubSpotForm } from "./_hubSpot";
+  import Invalid from "../../../shared/components/customElement/invalid.svelte";
+  import CustomElement from "../../../shared/components/customElement/customElement.svelte";
+  import { localStorage } from "../../../shared/stores/localStorage";
+  import { translate } from "../../../shared/stores/translate";
+  import Loading from "../../../shared/components/loading.svelte";
+  import sharedTranslations from "../../../shared/components/customElement/resources";
+  import translations from "./_resources";
 
   enum LocalStorageKeys {
     Code = "HubSpotForms:code",
@@ -98,7 +99,7 @@
 
   $: response && refreshToken.set(response.refreshToken);
 
-  const t = translate(translations, [sharedTranslations]);
+  const t = translate([translations, sharedTranslations]);
 </script>
 
 <CustomElement bind:value bind:config bind:disabled>

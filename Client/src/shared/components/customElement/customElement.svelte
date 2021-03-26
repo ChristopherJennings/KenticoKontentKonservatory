@@ -40,7 +40,6 @@
         }
       }
     });
-
     resizeObserver.observe(root);
 
     customElement = CustomElement;
@@ -57,10 +56,14 @@
     customElement.onDisabledChanged(
       (elementDisabled) => (disabled = elementDisabled)
     );
+
+    return () => resizeObserver.disconnect();
   });
 
   $: {
-    value && !disabled && customElement?.setValue(JSON.stringify(value));
+    value !== undefined &&
+      !disabled &&
+      customElement?.setValue(JSON.stringify(value));
   }
 
   $: {
@@ -89,6 +92,7 @@
   <body />
 </div>
 
+<!-- Workaround for :global() styles not being removed: https://github.com/sveltejs/svelte/issues/5530 -->
 <style>
   @import url("https://fonts.googleapis.com/css?family=Source+Sans+Pro:400,700,400italic,700italic");
 

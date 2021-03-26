@@ -3,21 +3,22 @@
 </script>
 
 <script lang="ts">
-  import CustomElement from "./../_shared/customElement/customElement.svelte";
-  import { translate } from "../../../utilities/translateStore";
-  import Loading from "../../../shared/loading.svelte";
-  import translations from "./_resources";
-  import sharedTranslations from "./../_shared/resources";
-  import ObjectTile from "./../_shared/objectTile.svelte";
+  import moment from "moment";
+  import { fade } from "svelte/transition";
   import type {
     AdditionalInfo,
     IAsset,
     IBynderOptions,
     BynderCompactView as BynderCompactViewType,
   } from "./_bynder";
-  import moment from "moment";
-  import { fade } from "svelte/transition";
-  import Invalid from "../_shared/customElement/invalid.svelte";
+
+  import Invalid from "../../../shared/components/customElement/invalid.svelte";
+  import CustomElement from "../../../shared/components/customElement/customElement.svelte";
+  import { translate } from "../../../shared/stores/translate";
+  import Loading from "../../../shared/components/loading.svelte";
+  import sharedTranslations from "../../../shared/components/customElement/resources";
+  import ObjectTile from "../../../shared/components/objectTile.svelte";
+  import translations from "./_resources";
 
   interface IBynderConfig {
     bynderOptions: Partial<IBynderOptions>;
@@ -60,7 +61,7 @@
     value.assets = value.assets.filter((oldAsset) => oldAsset.id !== asset.id);
   };
 
-  const t = translate(translations, [sharedTranslations]);
+  const t = translate([translations, sharedTranslations]);
 </script>
 
 <svelte:head>
@@ -73,10 +74,10 @@
   <div transition:fade>
     {#if !disabled}
       <div class="group">
-        <button class="button" on:click={click}> {$t('open')} </button>
+        <button class="button" on:click={click}> {$t("open")} </button>
         {#if listOpen}
           <button class="button" on:click={() => onSuccess(value.assets)}>
-            {$t('close')}
+            {$t("close")}
           </button>
         {/if}
       </div>
@@ -90,7 +91,7 @@
             imageUrl={asset.derivatives.webImage}
             name={asset.name}
             thumbnailUrl={asset.derivatives.thumbnail}
-            detail={moment(asset.updatedAt).format('LLL')}
+            detail={moment(asset.updatedAt).format("LLL")}
             onRemove={() => removeAsset(asset)} />
         {/each}
       </div>

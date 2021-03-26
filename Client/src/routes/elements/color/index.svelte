@@ -1,13 +1,14 @@
 <script lang="ts">
-  import CustomElement from "./../_shared/customElement/customElement.svelte";
-  import { translate } from "../../../utilities/translateStore";
   import tinycolor from "tinycolor2";
-  import Loading from "../../../shared/loading.svelte";
-  import translations from "./_resources";
-  import sharedTranslations from "./../_shared/resources";
-  import { fade } from "svelte/transition";
-  import Invalid from "../_shared/customElement/invalid.svelte";
   import { round } from "lodash";
+  import { fade } from "svelte/transition";
+
+  import Invalid from "../../../shared/components/customElement/invalid.svelte";
+  import CustomElement from "../../../shared/components/customElement/customElement.svelte";
+  import { translate } from "../../../shared/stores/translate";
+  import Loading from "../../../shared/components/loading.svelte";
+  import sharedTranslations from "../../../shared/components/customElement/resources";
+  import translations from "./_resources";
 
   interface IColorConfig {
     presets: string[];
@@ -75,14 +76,15 @@
     }
   };
 
-  const t = translate(translations, [sharedTranslations]);
+  const t = translate([translations, sharedTranslations]);
 </script>
 
 <CustomElement
   bind:value
   bind:config
   bind:disabled
-  on:ready={() => (tinyColor = tinycolor({
+  on:ready={() =>
+    (tinyColor = tinycolor({
       h: value.hue,
       s: `${value.saturation}%`,
       l: `${value.lightness}%`,
@@ -109,7 +111,8 @@
         max="360"
         {disabled}
         value={hue}
-        on:input={(event) => (tinyColor = tinycolor({
+        on:input={(event) =>
+          (tinyColor = tinycolor({
             h: event.currentTarget.value,
             s: `${saturation}%`,
             l: `${lightness}%`,
@@ -117,7 +120,8 @@
     </div>
     <div class="inputs item">
       <div class="group">
-        <label class="group column item"><div class="label">{$t('hue')}</div>
+        <label class="group column item"
+          ><div class="label">{$t("hue")}</div>
           <input
             class="input"
             type="number"
@@ -125,14 +129,16 @@
             max="360"
             {disabled}
             value={hue}
-            on:input={(event) => (tinyColor = tinycolor({
+            on:input={(event) =>
+              (tinyColor = tinycolor({
                 h: event.currentTarget.value,
                 s: `${saturation}%`,
                 l: `${lightness}%`,
               }))} />
         </label>
-        <label class="group column item"><div class="label">
-            {$t('saturation')}
+        <label class="group column item"
+          ><div class="label">
+            {$t("saturation")}
           </div>
           <input
             class="input"
@@ -141,14 +147,15 @@
             max="100"
             {disabled}
             value={saturation}
-            on:input={(event) => (tinyColor = tinycolor({
+            on:input={(event) =>
+              (tinyColor = tinycolor({
                 h: hue,
                 s: `${event.currentTarget.value}%`,
                 l: `${lightness}%`,
               }))} />
         </label>
         <label class="group column item">
-          <div class="label">{$t('lightness')}</div>
+          <div class="label">{$t("lightness")}</div>
           <input
             class="input"
             type="number"
@@ -156,7 +163,8 @@
             max="100"
             {disabled}
             value={lightness}
-            on:input={(event) => (tinyColor = tinycolor({
+            on:input={(event) =>
+              (tinyColor = tinycolor({
                 h: hue,
                 s: `${saturation}%`,
                 l: `${event.currentTarget.value}%`,
@@ -164,7 +172,8 @@
         </label>
       </div>
       <div class="group">
-        <label class="group column item"><div class="label">{$t('red')}</div>
+        <label class="group column item"
+          ><div class="label">{$t("red")}</div>
           <input
             class="input"
             type="number"
@@ -172,13 +181,15 @@
             max="255"
             {disabled}
             value={red}
-            on:input={(event) => (tinyColor = tinycolor({
+            on:input={(event) =>
+              (tinyColor = tinycolor({
                 r: event.currentTarget.value,
                 g: green,
                 b: blue,
               }))} />
         </label>
-        <label class="group column item"><div class="label">{$t('green')}</div>
+        <label class="group column item"
+          ><div class="label">{$t("green")}</div>
           <input
             class="input"
             type="number"
@@ -186,14 +197,15 @@
             max="255"
             {disabled}
             value={green}
-            on:input={(event) => (tinyColor = tinycolor({
+            on:input={(event) =>
+              (tinyColor = tinycolor({
                 r: red,
                 g: event.currentTarget.value,
                 b: blue,
               }))} />
         </label>
         <label class="group column item">
-          <div class="label">{$t('blue')}</div>
+          <div class="label">{$t("blue")}</div>
           <input
             class="input"
             type="number"
@@ -201,7 +213,8 @@
             max="255"
             {disabled}
             value={blue}
-            on:input={(event) => (tinyColor = tinycolor({
+            on:input={(event) =>
+              (tinyColor = tinycolor({
                 r: red,
                 g: green,
                 b: event.currentTarget.value,
@@ -209,7 +222,8 @@
         </label>
       </div>
       <div class="group">
-        <label class="group column item"><div class="label">{$t('hex')}</div>
+        <label class="group column item"
+          ><div class="label">{$t("hex")}</div>
           <input class="input" disabled bind:value={hexValue} />
         </label>
         <div class="group item" />
@@ -223,7 +237,7 @@
           tinycolor(preset).isValid()
         )}
         <div class="group column">
-          <div class="label">{$t('presets')}</div>
+          <div class="label">{$t("presets")}</div>
           <div class="presets">
             {#each config.presets.filter((preset) =>
               tinycolor(preset).isValid()

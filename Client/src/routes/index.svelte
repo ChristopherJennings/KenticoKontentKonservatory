@@ -1,67 +1,29 @@
-<script context="module" lang="ts">
-  import type { Preload } from "@sapper/app";
-  import type { ISession } from "../shared/kontent";
-  import { deliveryClient } from "../shared/kontent";
-  import type { ISite } from "../shared/models/Site";
-  import { Site } from "../shared/models/Site";
-
-  export const preload: Preload<{}, ISession> = async function (
-    this,
-    page,
-    session
-  ) {
-    if (!session.kontent.projectId) {
-      return { site: { name: "", routes: [] } };
-    }
-
-    const site = (
-      await deliveryClient(session.kontent)
-        .item<Site>(Site.codename)
-        .depthParameter(6)
-        .toPromise()
-    ).item;
-
-    return { site: site.getModel() };
-  };
-</script>
-
 <script lang="ts">
-  export let site: ISite;
+  import { stores } from "@sapper/app";
+
+  import type { ISite } from "../shared/models/Site";
+
+  const { session } = stores<{ site: ISite }>();
 </script>
 
-<svelte:head>
-  <title>{site.name}</title>
-</svelte:head>
-
-<h1><a href="/">{site.name}</a></h1>
 <section>
   <div class="list">
-    {#each site.routes as route}
-      <a class="item" href={route.route}>
-        <div>
-          {#if route.icon}
-            {@html route.icon.svg}
-          {/if}
-          <h2>{route.name}</h2>
-        </div>
-      </a>
+    {#each $session.site.routes as route}
+      {#if route.routes.length > 0}
+        <a class="item" href={route.route}>
+          <div>
+            {#if route.icon}
+              {@html route.icon.svg}
+            {/if}
+            <h2>{route.name}</h2>
+          </div>
+        </a>
+      {/if}
     {/each}
   </div>
 </section>
 
 <style>
-  h1 {
-    text-align: center;
-    font-size: 5em;
-    text-transform: uppercase;
-    font-weight: 700;
-    margin: 0 0 0.5em 0;
-  }
-
-  h1 a {
-    text-decoration: none;
-  }
-
   section {
     flex-direction: row;
   }
@@ -89,10 +51,10 @@
     position: absolute;
     background: linear-gradient(
       160deg,
-      white,
-      gainsboro 32.9%,
-      #81d272 33%,
-      white
+      rgba(175, 197, 233, 0.2),
+      rgba(175, 197, 233, 0.2) 35.9%,
+      #db3c00 36%,
+      #db3c00
     );
     transition: all 0.5s;
     transform: translate(0%, 0%);

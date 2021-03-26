@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { property } from "../actions/property";
+
   export let showActions: boolean;
   export let imageUrl: string;
   export let name: string;
@@ -9,15 +11,9 @@
   export let size: number = 3;
   export let onRemove: () => void;
   export let onClick: () => void;
-
-  let container: HTMLDivElement;
-
-  $: if (container) {
-    container.style.setProperty("--size", `${size}`);
-  }
 </script>
 
-<div class="wrapper" bind:this={container}>
+<div class="wrapper" use:property={["size", size]}>
   <div class="content" class:selected on:click={onClick}>
     {#if showActions}
       <div class="actions">
@@ -89,46 +85,6 @@
     width: 100%;
     cursor: default;
     background-color: hsla(0, 0%, 96.1%, 0.85);
-  }
-
-  @font-face {
-    font-family: kentico-icons;
-    font-style: normal;
-    font-weight: 400;
-    src: url("/kentico-icons-v1.6.0.woff") format("woff");
-  }
-
-  .icon {
-    display: inline-block;
-    font-family: kentico-icons;
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-    font-style: normal;
-    font-weight: 400;
-    font-variant: normal;
-    text-transform: none;
-    padding: 0.3em 0.6em;
-    font-size: 1em;
-    color: #424242;
-    cursor: pointer;
-  }
-
-  .icon.download:before {
-    content: "\E6DD";
-  }
-
-  .icon.remove:before {
-    content: "\E60E";
-  }
-
-  .download:hover {
-    color: #fff;
-    background-color: #0a68f5;
-  }
-
-  .remove:hover {
-    color: #fff;
-    background-color: #f02222;
   }
 
   .preview {

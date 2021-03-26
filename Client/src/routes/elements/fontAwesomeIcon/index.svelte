@@ -1,15 +1,16 @@
 <script lang="ts">
-  import CustomElement from "./../_shared/customElement/customElement.svelte";
-  import { translate } from "../../../utilities/translateStore";
-  import Loading from "../../../shared/loading.svelte";
-  import translations from "./_resources";
-  import sharedTranslations from "../_shared/resources";
-  import ObjectTile from "../_shared/objectTile.svelte";
-  import type { IFontAwesomeIcons } from "./_fontAwesomeIcons";
   import { fade } from "svelte/transition";
-  import Invalid from "../_shared/customElement/invalid.svelte";
   import wretch from "wretch";
   import { debounce, flatMap } from "lodash";
+
+  import type { IFontAwesomeIcons } from "./_fontAwesomeIcons";
+  import Invalid from "../../../shared/components/customElement/invalid.svelte";
+  import CustomElement from "../../../shared/components/customElement/customElement.svelte";
+  import { translate } from "../../../shared/stores/translate";
+  import Loading from "../../../shared/components/loading.svelte";
+  import sharedTranslations from "../../../shared/components/customElement/resources";
+  import ObjectTile from "../../../shared/components/objectTile.svelte";
+  import translations from "./_resources";
 
   interface ISearchIcon {
     name: string;
@@ -106,7 +107,7 @@
     return results;
   };
 
-  const t = translate(translations, [sharedTranslations]);
+  const t = translate([translations, sharedTranslations]);
 </script>
 
 <CustomElement bind:value bind:config bind:disabled>
@@ -115,10 +116,10 @@
       <div class="group">
         {#if !listOpen}
           <button class="button" on:click={() => (listOpen = true)}>
-            {$t('open')}
+            {$t("open")}
           </button>
         {:else}
-          <button class="button" on:click={closeList}> {$t('close')} </button>
+          <button class="button" on:click={closeList}> {$t("close")} </button>
         {/if}
         {#if value.icon}
           <button
@@ -127,20 +128,21 @@
             on:click={() => {
               value.icon = undefined;
             }}>
-            {$t('clear')}
+            {$t("clear")}
           </button>
         {/if}
       </div>
       <div class="group column">
         {#if listOpen}
           <div class="group" transition:fade>
-            <label class="group column filter"><div class="label">
-                {$t('search')}
+            <label class="group column filter"
+              ><div class="label">
+                {$t("search")}
               </div>
               <input
                 class="input"
                 type="text"
-                placeholder={$t('placeholder')}
+                placeholder={$t("placeholder")}
                 bind:value={rawFilter} />
             </label>
           </div>
@@ -150,7 +152,14 @@
                 title={icon.search}
                 size={6}
                 onClick={() => {
-                  value.icon = { name: icon.name, label: icon.label, unicode: icon.unicode, style: icon.style, svg: icon.svg, cssClass: `fa${icon.style[0]} fa-${icon.name}` };
+                  value.icon = {
+                    name: icon.name,
+                    label: icon.label,
+                    unicode: icon.unicode,
+                    style: icon.style,
+                    svg: icon.svg,
+                    cssClass: `fa${icon.style[0]} fa-${icon.name}`,
+                  };
                   closeList();
                 }}>
                 <div slot="image" class="tile">
@@ -164,7 +173,7 @@
     {/if}
     {#if value.icon}
       <div class="group column" transition:fade>
-        <div>{$t('previewDescription')}</div>
+        <div>{$t("previewDescription")}</div>
         <div class="preview">
           <div class="description">
             <h2>{value.icon.label}</h2>

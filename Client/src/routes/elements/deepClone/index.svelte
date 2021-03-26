@@ -1,16 +1,17 @@
 <script lang="ts">
-  import CustomElement from "./../_shared/customElement/customElement.svelte";
-  import { translate } from "../../../utilities/translateStore";
-  import Loading from "../../../shared/loading.svelte";
-  import translations from "./_resources";
-  import sharedTranslations from "../_shared/resources";
-  import { fade } from "svelte/transition";
-  import Invalid from "../_shared/customElement/invalid.svelte";
   import wretch from "wretch";
-  import type { IContext } from "../_shared/customElement/customElement";
   import moment from "moment";
-  import type { IContentItem } from "../_shared/management";
   import { round } from "lodash";
+  import { fade } from "svelte/transition";
+
+  import type { IContentItem } from "../../../shared/management";
+  import Invalid from "../../../shared/components/customElement/invalid.svelte";
+  import CustomElement from "../../../shared/components/customElement/customElement.svelte";
+  import { translate } from "../../../shared/stores/translate";
+  import Loading from "../../../shared/components/loading.svelte";
+  import sharedTranslations from "../../../shared/components/customElement/resources";
+  import type { IContext } from "../../../shared/components/customElement/customElement";
+  import translations from "./_resources";
 
   interface IDeepCloneResponse {
     totalApiCalls: number;
@@ -76,7 +77,7 @@
     return result.join(", ");
   };
 
-  const t = translate(translations, [sharedTranslations]);
+  const t = translate([translations, sharedTranslations]);
 </script>
 
 <CustomElement bind:value bind:config bind:context bind:disabled>
@@ -86,10 +87,10 @@
     <div transition:fade>
       {#if !disabled}
         <div class="group">
-          <button class="button" on:click={clone}>{$t('clone')}</button>
+          <button class="button" on:click={clone}>{$t("clone")}</button>
         </div>
       {:else}
-        <div class="group">{$t('noFunctionality')}</div>
+        <div class="group">{$t("noFunctionality")}</div>
       {/if}
       {#if responseError}
         <div class="group">{responseError}</div>
@@ -97,17 +98,17 @@
       {#if response && !responseError}
         <div class="group" transition:fade>
           <div class="group column item">
-            <div class="label">{$t('totalTime')}</div>
+            <div class="label">{$t("totalTime")}</div>
             <span>{totalTime}</span>
           </div>
           <div class="group column item">
-            <div class="label">{$t('totalApiCalls')}</div>
+            <div class="label">{$t("totalApiCalls")}</div>
             <span>{response.totalApiCalls}</span>
           </div>
         </div>
         <div class="group">
           <div class="group column item">
-            <div class="label">{$t('newItems')}</div>
+            <div class="label">{$t("newItems")}</div>
             {#each response.newItems as newItem (newItem.id)}
               <span>
                 <a

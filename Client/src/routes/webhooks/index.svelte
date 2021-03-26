@@ -1,85 +1,21 @@
 <script context="module" lang="ts">
-  import type { Preload } from "@sapper/app";
-  import type { ISession, SvelteConstructor } from "../../shared/kontent";
-  import {
-    deliveryClient,
-    extractComponents,
-    replaceComponents,
-  } from "../../shared/kontent";
+  import type { Preload } from "@sapper/common";
+
+  import type { SvelteConstructor } from "../../shared/kontent";
+  import { replaceComponents } from "../../shared/kontent";
   import type { ICode } from "../../shared/models/Code";
   import { Code as CodeModel } from "../../shared/models/Code";
   import type { IWebhook } from "../../shared/models/Webhook";
-  import { Webhook } from "../../shared/models/Webhook";
-  import { Icon } from "../../shared/models/Icon";
   import type { IIcon } from "../../shared/models/Icon";
-  import { Translation } from "../../shared/models/Translation";
-  import type { ISite } from "../../shared/models/Site";
-  import { Site } from "../../shared/models/Site";
 
-  export const preload: Preload<
-    {
-      webhooks: IWebhook[];
-      components: Map<string, ICode>;
-      icons: IIcon[];
-    },
-    ISession
-  > = async function (this, page, session) {
-    if (!session.kontent.projectId) {
-      return {
-        site: { name: "", routes: [] },
-        webhooks: [],
-        components: [],
-        icons: [],
-      };
-    }
-
-    const components = new Map<string, ICode>();
-    const richTextResolver = extractComponents(
-      components,
-      new Map([[CodeModel.codename, (item) => (item as CodeModel).getModel()]])
-    );
-
-    const webhooks = (
-      await deliveryClient(session.kontent)
-        .items<Webhook>()
-        .type(Webhook.codename)
-        .queryConfig({
-          richTextResolver,
-        })
-        .toPromise()
-    ).items;
-
-    const icons = (
-      await deliveryClient(session.kontent)
-        .items<Icon>()
-        .type(Icon.codename)
-        .toPromise()
-    ).items;
-
-    const translations = (
-      await deliveryClient(session.kontent)
-        .items<Translation>()
-        .type(Translation.codename)
-        .toPromise()
-    ).items.reduce((translations, translation) => {
-      translations[translation.system.codename] = translation.content.value;
-      return translations;
-    }, {});
-
-    session.kontent.translations = { en_us: { translation: translations } };
-
-    const site = (
-      await deliveryClient(session.kontent)
-        .item<Site>(Site.codename)
-        .depthParameter(6)
-        .toPromise()
-    ).item;
+  export const preload: Preload = async function (this, page, session) {
+    const webhooks = await (await this.fetch("kontent/webhooks")).json();
+    const icons = await (await this.fetch("kontent/icons")).json();
 
     return {
-      site: site.getModel(),
-      webhooks: webhooks.map((webhook) => webhook.getModel()),
-      components,
-      icons: icons.map((icon) => icon.getModel()),
+      webhooks: webhooks.webhooks,
+      components: webhooks.components,
+      icons,
     };
   };
 </script>
@@ -87,18 +23,18 @@
 <script lang="ts">
   import sortArray from "sort-array";
   import { onMount, tick } from "svelte";
-  import Code from "../../shared/components/code.svelte";
-  import { translate } from "../../utilities/translateStore";
   import { stores } from "@sapper/app";
 
-  export let site: ISite;
+  import Code from "../../shared/components/code.svelte";
+  import { translate } from "../../shared/stores/translate";
+
   export let webhooks: IWebhook[];
   export let components: Map<string, ICode>;
   export let icons: IIcon[];
 
   let selectedWebhook: IWebhook;
 
-  const { session } = stores<ISession>();
+  const { session } = stores();
 
   const replaceMap = new Map<string, SvelteConstructor>([
     [CodeModel.codename, (args) => new Code(args)],
@@ -107,15 +43,14 @@
   onMount(() => {
     if (window.location.hash) {
       selectedWebhook = webhooks.find(
-        (customElement) =>
-          customElement.codename == window.location.hash.slice(1)
+        (webhook) => webhook.codename == window.location.hash.slice(1)
       );
     }
   });
 
-  $: selectedWebhook && scrollToElement();
+  $: selectedWebhook && scrollTo();
 
-  const scrollToElement = async () => {
+  const scrollTo = async () => {
     if (selectedWebhook) {
       const listItem = document.getElementById(selectedWebhook.codename);
 
@@ -142,24 +77,22 @@
   }
 
   $: sortedWebhooks = sortArray(
-    webhooks.filter((webhook) => {
+    webhooks.filter((app) => {
       if (filter === "") {
         return true;
       }
 
       const matches = (value: string) => value.match(new RegExp(filter, "gi"));
 
-      if (matches(webhook.name)) {
+      if (matches(app.name)) {
         return true;
       }
 
-      if (
-        webhook.tags.some((tag) => matches(tag.name) || matches(tag.synonyms))
-      ) {
+      if (app.tags.some((tag) => matches(tag.name) || matches(tag.synonyms))) {
         return true;
       }
 
-      if (matches(webhook.description)) {
+      if (matches(app.description)) {
         return true;
       }
 
@@ -172,44 +105,37 @@
 
   const gitHubIcon = icons.find((icon) => icon.codename == "github_icon");
 
-  const t = translate($session.kontent.translations);
+  const t = translate([$session.translations]);
 </script>
 
-<svelte:head>
-  <title>{site.name}</title>
-</svelte:head>
-
-<h1><a href="/">{site.name}</a></h1>
 <section>
   <div class="list">
-    {#if webhooks.length > 0}
-      <div class="filter">
-        <input
-          type="text"
-          placeholder={$t("filter_webhooks")}
-          bind:value={filter} />
-      </div>
-    {/if}
-    {#each sortedWebhooks as customElement (customElement.name)}
+    <div class="filter">
+      <input
+        type="text"
+        placeholder={$t("filter_webhooks")}
+        bind:value={filter} />
+    </div>
+    {#each sortedWebhooks as webhook (webhook.name)}
       <div
         class="group"
-        id={customElement.codename}
-        class:selected={selectedWebhook == customElement}>
+        id={webhook.codename}
+        class:selected={selectedWebhook == webhook}>
         <div
           class="content"
           on:click={() => {
-            if (selectedWebhook !== customElement) {
-              selectedWebhook = customElement;
+            if (selectedWebhook !== webhook) {
+              selectedWebhook = webhook;
               history.replaceState(
                 undefined,
                 undefined,
-                `${window.location.origin}${window.location.pathname}#${customElement.codename}`
+                `${window.location.origin}${window.location.pathname}#${webhook.codename}`
               );
             }
           }}>
-          <h2 class="name">{customElement.name}</h2>
-          {#if selectedWebhook == customElement}
-            {#each sortArray(customElement.tags, {
+          <h2 class="name">{webhook.name}</h2>
+          {#if selectedWebhook == webhook}
+            {#each sortArray(webhook.tags, {
               by: ["name"],
             }) as tag (tag.codename)}
               <span class="tag">{tag.name}</span>
@@ -217,9 +143,9 @@
             <div
               class="description"
               use:replaceComponents={{ components, replaceMap }}>
-              {@html customElement.description}
+              {@html webhook.description}
             </div>
-            <a class="badge" href={customElement.github}
+            <a class="badge" href={webhook.github}
               >{@html gitHubIcon.svg}{$t("github")}</a>
           {/if}
         </div>
@@ -230,34 +156,24 @@
 </section>
 
 <style>
-  h1 {
-    text-align: center;
-    font-size: 5em;
-    text-transform: uppercase;
-    font-weight: 700;
-    margin: 0 0 0.5em 0;
-  }
-
-  h1 a {
-    text-decoration: none;
-  }
-
   .filter {
     display: flex;
   }
 
-  .filter input {
+  .filter input[type="text"] {
+    outline: none;
+    background: none;
+    margin: 0.2em 0em 1em 0em;
+    color: #151515;
+    font-family: inherit;
+    border: 1px solid #a8a8a8;
+    border-radius: calc((1vh + 1vw) * 1);
+    padding: calc((1vh + 1vw) * 0.3);
     flex: 1;
-    margin: 0.2em 0.2em 0.5em;
-    padding: 0.3em;
-    font-size: 1.2em;
-    border: none;
-    border-bottom: #cacaca solid;
   }
 
-  .filter input:focus {
-    outline: none;
-    border-bottom: #727272 solid;
+  input:focus {
+    border-color: #141619;
   }
 
   .list {
@@ -282,10 +198,10 @@
     position: absolute;
     background: linear-gradient(
       160deg,
-      white,
-      gainsboro 35.9%,
-      #81d272 36%,
-      white
+      rgba(175, 197, 233, 0.2),
+      rgba(175, 197, 233, 0.2) 35.9%,
+      #db3c00 36%,
+      #db3c00
     );
     transition: all 0.5s;
     transform: translate(0%, 0%);
@@ -305,7 +221,7 @@
   }
 
   .group.selected .content {
-    box-shadow: #afafaf 0em 0.2em 0.4em;
+    background: rgba(175, 197, 233, 0.2);
   }
 
   .group.selected .content .description {
@@ -325,10 +241,11 @@
     background: #d0d0d0;
     margin-right: 0.2em;
     text-transform: uppercase;
-    border-radius: 50vh;
+    border-radius: 100em;
     padding: 0.2em 0.6em;
     color: white;
-    font-weight: 600;
+    font-weight: 500;
+    background: #db3c00;
   }
 
   .group :global(sup) {
@@ -345,18 +262,18 @@
   }
 
   .badge {
-    background: #81d272;
+    background: #db3c00;
     margin-right: 0.2em;
-    border-radius: 50vh;
+    border-radius: 100em;
     padding: 0.2em 0.6em;
     color: #ffffff;
     fill: #ffffff;
-    font-weight: 700;
+    font-weight: 500;
     text-decoration: none;
   }
 
   .badge:hover {
-    background: #5d9b52;
+    background: #a82e00;
   }
 
   .group :global(.badge svg) {

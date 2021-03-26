@@ -1,15 +1,16 @@
 <script lang="ts">
-  import CustomElement from "./../_shared/customElement/customElement.svelte";
-  import { translate } from "../../../utilities/translateStore";
-  import Loading from "../../../shared/loading.svelte";
-  import translations from "./_resources";
-  import sharedTranslations from "./../_shared/resources";
-  import ObjectTile from "./../_shared/objectTile.svelte";
-  import type { IPriceV2, IProduct, IQueryRoot } from "./_shopify";
   import { GraphQLClient, gql } from "graphql-request";
   import DOMPurify from "dompurify";
   import { fade } from "svelte/transition";
-  import Invalid from "../_shared/customElement/invalid.svelte";
+
+  import type { IPriceV2, IProduct, IQueryRoot } from "./_shopify";
+  import Invalid from "../../../shared/components/customElement/invalid.svelte";
+  import CustomElement from "../../../shared/components/customElement/customElement.svelte";
+  import { translate } from "../../../shared/stores/translate";
+  import Loading from "../../../shared/components/loading.svelte";
+  import sharedTranslations from "../../../shared/components/customElement/resources";
+  import ObjectTile from "../../../shared/components/objectTile.svelte";
+  import translations from "./_resources";
 
   interface IShopifyConfig {
     storefrontAccessToken: string;
@@ -105,7 +106,7 @@
     }).format(parseFloat(amount));
   };
 
-  const t = translate(translations, [sharedTranslations]);
+  const t = translate([translations, sharedTranslations]);
 </script>
 
 <CustomElement bind:value bind:config bind:disabled>
@@ -114,17 +115,17 @@
       <div class="group">
         {#if !listOpen}
           <button class="button" on:click={() => (listOpen = true)}>
-            {$t('open')}
+            {$t("open")}
           </button>
         {:else}
-          <button class="button" on:click={closeList}> {$t('close')} </button>
+          <button class="button" on:click={closeList}> {$t("close")} </button>
         {/if}
         {#if value.product}
           <button
             class="button destructive"
             in:fade|local
             on:click={() => (value.product = undefined)}>
-            {$t('clear')}
+            {$t("clear")}
           </button>
         {/if}
       </div>
@@ -134,13 +135,14 @@
             <Loading />
           {:then result}
             <div class="group" transition:fade>
-              <label class="group column filter"><div class="label">
-                  {$t('search')}
+              <label class="group column filter"
+                ><div class="label">
+                  {$t("search")}
                 </div>
                 <input
                   class="input"
                   type="text"
-                  placeholder={$t('placeholder')}
+                  placeholder={$t("placeholder")}
                   bind:value={filter} />
               </label>
             </div>
@@ -148,7 +150,9 @@
               {#each filterData(result) as product (product.id)}
                 <ObjectTile
                   name={product.title}
-                  detail={formatProductPrice(product.variants.edges[0].node.priceV2)}
+                  detail={formatProductPrice(
+                    product.variants.edges[0].node.priceV2
+                  )}
                   imageUrl={product.images.edges[0].node.originalSrc}
                   thumbnailUrl={product.images.edges[0].node.originalSrc}
                   onClick={() => {
@@ -164,7 +168,7 @@
     {#if value.product}
       <div class="group" transition:fade>
         <div class="group column">
-          <div>{$t('previewDescription')}</div>
+          <div>{$t("previewDescription")}</div>
           <div class="group">
             <div>
               <img
@@ -175,11 +179,13 @@
             <div class="description">
               <h2>{value.product.title}</h2>
               <h3>
-                {formatProductPrice(value.product.variants.edges[0].node.priceV2)}
+                {formatProductPrice(
+                  value.product.variants.edges[0].node.priceV2
+                )}
               </h3>
               {@html DOMPurify.sanitize(value.product.descriptionHtml, {
                 WHOLE_DOCUMENT: false,
-                FORBID_TAGS: ['object'],
+                FORBID_TAGS: ["object"],
               })}
             </div>
           </div>

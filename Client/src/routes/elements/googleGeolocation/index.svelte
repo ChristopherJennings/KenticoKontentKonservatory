@@ -1,12 +1,13 @@
 <script lang="ts">
-  import CustomElement from "./../_shared/customElement/customElement.svelte";
-  import { translate } from "../../../utilities/translateStore";
-  import Loading from "../../../shared/loading.svelte";
-  import translations from "./_resources";
-  import sharedTranslations from "../_shared/resources";
   import { fade } from "svelte/transition";
   import { Loader } from "@googlemaps/js-api-loader";
-  import Invalid from "../_shared/customElement/invalid.svelte";
+
+  import Invalid from "../../../shared/components/customElement/invalid.svelte";
+  import CustomElement from "../../../shared/components/customElement/customElement.svelte";
+  import { translate } from "../../../shared/stores/translate";
+  import Loading from "../../../shared/components/loading.svelte";
+  import sharedTranslations from "../../../shared/components/customElement/resources";
+  import translations from "./_resources";
 
   interface IGoogleGeolocationConfig {
     apiKey: string;
@@ -90,20 +91,21 @@
     }
   };
 
-  const t = translate(translations, [sharedTranslations]);
+  const t = translate([translations, sharedTranslations]);
 </script>
 
 <CustomElement bind:value bind:config bind:disabled>
   <div transition:fade>
     {#if !disabled}
       <div class="group">
-        <label class="group column filter"><div class="label">
-            {$t('search')}
+        <label class="group column filter"
+          ><div class="label">
+            {$t("search")}
           </div>
           <input
             class="input"
             type="text"
-            placeholder={$t('placeholder')}
+            placeholder={$t("placeholder")}
             bind:this={searchMount} />
         </label>
       </div>

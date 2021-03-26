@@ -5,35 +5,20 @@ import { Code } from './models/Code';
 import { CustomElement } from './models/CustomElement';
 import { Icon } from './models/Icon';
 import { Route } from './models/Route';
-import { ISite, Site } from './models/Site';
+import { Site } from './models/Site';
 import { Tag } from './models/Tag';
 import { Translation } from './models/Translation';
 import { Webhook } from './models/Webhook';
 
 import type { SvelteComponent } from "svelte/internal";
-import type { Resource } from "i18next";
-interface IKontent {
-  projectId: string;
-  previewApiKey: string;
-  securedDeliveryApiKey: string;
-  translations: Resource;
-  site: ISite;
-}
 
-export interface ISession {
-  kontent: IKontent;
-}
-
-export const deliveryClient = (options: Partial<IKontent>) => {
-  const { projectId, previewApiKey, securedDeliveryApiKey } = options;
-
+export const deliveryClient = () => {
   return new DeliveryClient({
-    projectId,
-    previewApiKey,
-    secureApiKey: securedDeliveryApiKey,
+    projectId: process.env.KONTENT_PROJECTID,
+    previewApiKey: process.env.KONTENT_PREVIEWAPIKEY,
+    secureApiKey: undefined,
     globalQueryConfig: {
-      usePreviewMode: previewApiKey !== undefined,
-      useSecuredMode: securedDeliveryApiKey !== undefined,
+      usePreviewMode: process.env.KONTENT_PREVIEWAPIKEY !== undefined,
     },
     typeResolvers: [
       new TypeResolver(Site.codename, () => new Site()),

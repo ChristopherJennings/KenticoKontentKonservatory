@@ -1,20 +1,21 @@
 <script lang="ts">
-  import CustomElement from "./../_shared/customElement/customElement.svelte";
-  import { translate } from "../../../utilities/translateStore";
-  import Loading from "../../../shared/loading.svelte";
-  import translations from "./_resources";
-  import sharedTranslations from "../_shared/resources";
   import { fade } from "svelte/transition";
-  import Invalid from "../_shared/customElement/invalid.svelte";
   import wretch from "wretch";
-  import type { IContext } from "../_shared/customElement/customElement";
   import moment from "moment";
+  import { round } from "lodash";
+
   import type {
     ElementType,
     IContentItem,
     IContentType,
-  } from "../_shared/management";
-  import { round } from "lodash";
+  } from "../../../shared/management";
+  import Invalid from "../../../shared/components/customElement/invalid.svelte";
+  import CustomElement from "../../../shared/components/customElement/customElement.svelte";
+  import { translate } from "../../../shared/stores/translate";
+  import Loading from "../../../shared/components/loading.svelte";
+  import sharedTranslations from "../../../shared/components/customElement/resources";
+  import type { IContext } from "../../../shared/components/customElement/customElement";
+  import translations from "./_resources";
 
   interface IGetTypesResponse {
     currentType: IContentType;
@@ -131,7 +132,7 @@
     return result.join(", ");
   };
 
-  const t = translate(translations, [sharedTranslations]);
+  const t = translate([translations, sharedTranslations]);
 </script>
 
 <CustomElement bind:value bind:config bind:context bind:disabled>
@@ -140,7 +141,7 @@
   {:else}
     <div transition:fade>
       {#if disabled}
-        <div class="group">{$t('noFunctionality')}</div>
+        <div class="group">{$t("noFunctionality")}</div>
       {/if}
       {#if responseError}
         <div class="group">{responseError}</div>
@@ -148,25 +149,24 @@
       {#if !disabled && getTypesResponse}
         <div class="group">
           <select class="select" bind:value={typeId}>
-            <option value="">{$t('chooseType')}</option>
+            <option value="">{$t("chooseType")}</option>
             {#each getTypesResponse.otherTypes as otherType (otherType.id)}
               <option value={otherType.id}>
                 {otherType.name || otherType.codename}
               </option>
             {/each}
           </select>
-          {#if typeId !== ''}
-            <button
-              class="button"
-              on:click={changeType}>{$t('changeType')}</button>
+          {#if typeId !== ""}
+            <button class="button" on:click={changeType}
+              >{$t("changeType")}</button>
           {/if}
         </div>
       {/if}
-      {#if typeId !== ''}
+      {#if typeId !== ""}
         <div class="group" transition:fade>
-          <div class="item"><b>{$t('elementName')}</b></div>
-          <div class="item"><b>{$t('elementType')}</b></div>
-          <div class="item"><b>{$t('elementSource')}</b></div>
+          <div class="item"><b>{$t("elementName")}</b></div>
+          <div class="item"><b>{$t("elementType")}</b></div>
+          <div class="item"><b>{$t("elementSource")}</b></div>
         </div>
         <div class="group column" transition:fade>
           {#each selectedType.elements as element (element.id)}
@@ -181,13 +181,13 @@
                   on:change={(event) => {
                     const value = event.currentTarget.value;
 
-                    if (value !== '') {
+                    if (value !== "") {
                       elementMappings[element.id] = value;
                     } else {
                       delete elementMappings[element.id];
                     }
                   }}>
-                  <option value="">{$t('chooseElement')}</option>
+                  <option value="">{$t("chooseElement")}</option>
                   {#each getTypesResponse.currentType.elements.filter(
                     (currentElement) =>
                       typeMap[element.type].some(
@@ -196,7 +196,9 @@
                       )
                   ) as currentElement (currentElement.id)}
                     <option value={currentElement.id}>
-                      {`${currentElement.name ?? currentElement.codename} (${currentElement.type})`}
+                      {`${currentElement.name ?? currentElement.codename} (${
+                        currentElement.type
+                      })`}
                     </option>
                   {/each}
                 </select>
@@ -208,17 +210,17 @@
       {#if changeTypeResponse && !responseError}
         <div class="group" transition:fade>
           <div class="group column item">
-            <div class="label">{$t('totalTime')}</div>
+            <div class="label">{$t("totalTime")}</div>
             <span>{totalTime}</span>
           </div>
           <div class="group column item">
-            <div class="label">{$t('totalApiCalls')}</div>
+            <div class="label">{$t("totalApiCalls")}</div>
             <span>{changeTypeResponse.totalApiCalls}</span>
           </div>
         </div>
         <div class="group">
           <div class="group column">
-            <div class="label">{$t('newItem')}</div>
+            <div class="label">{$t("newItem")}</div>
             <span>
               <a
                 href={`https://app.kontent.ai/${context.projectId}/content-inventory/${context.variant.id}/content/${changeTypeResponse.newItem.id}`}
@@ -232,7 +234,7 @@
         {#if changeTypeResponse.updatedItems.length > 0}
           <div class="group">
             <div class="group column item">
-              <div class="label">{$t('updatedItems')}</div>
+              <div class="label">{$t("updatedItems")}</div>
               {#each changeTypeResponse.updatedItems as updatedItem (updatedItem.id)}
                 <span>
                   <a

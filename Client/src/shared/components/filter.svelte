@@ -1,5 +1,6 @@
 <script lang="ts">
   import { without } from "lodash";
+  import sortArray from "sort-array";
 
   type TValue = any;
   type TOption = { display: string; key: string; filter: string };
@@ -94,12 +95,6 @@
               if (newValue) {
                 setValue(newValue);
               }
-            } else {
-              const foundValue = values.find((value) => value === newValue);
-
-              if (foundValue) {
-                setValue(foundValue);
-              }
             }
           }
 
@@ -136,6 +131,52 @@
     }
   };
 
+  const filterOptions = (options: [TValue, TOption][]) => {
+    const result: { priority: number; pair: [TValue, TOption] }[] = [];
+
+    for (const pair of options) {
+      if (matches(pair)) {
+        let priority = 0;
+        const indexes = [];
+
+        const [, option] = pair;
+
+        if (matchesFilter !== "") {
+          const display = option.display.toLowerCase();
+
+          for (
+            let letterIndex = 0;
+            letterIndex < display.length;
+            letterIndex++
+          ) {
+            const letter = display[letterIndex];
+
+            if (matchesFilter.includes(letter)) {
+              indexes.push(letterIndex);
+            }
+          }
+
+          if (indexes.length > 1) {
+            for (let index = 0; index < indexes.length - 1; index++) {
+              const difference = indexes[index + 1] - indexes[index];
+              priority += difference * difference;
+            }
+          }
+        }
+
+        if (indexes.length > 0) {
+          result.push({ priority: priority / indexes.length, pair });
+        } else {
+          result.push({ priority, pair });
+        }
+      }
+    }
+
+    return sortArray(result, { order: "asc", by: "priority" }).map(
+      (item) => item.pair
+    ) as [TValue, TOption][];
+  };
+
   const matches = (pair: [TValue, TOption]) => {
     const [, option] = pair;
 
@@ -158,8 +199,8 @@
 </script>
 
 <div class="root">
-  <div class="inputRow">
-    <div class="selection" class:focused>
+  <div class="inputRow" class:focused>
+    <div class="selection">
       {#if value}
         {#if single}
           <b class="value">
@@ -209,27 +250,25 @@
   <div class="options">
     <div class="list" class:focused>
       {#key matchesFilter}
-        {#each options as option (option[1].key)}
-          {#if matches(option)}
-            <div
-              class="option"
-              class:selected={single
-                ? value === option[0]
-                : value.includes(option[0])}
-              on:click={() => clicking(option[0])}>
-              {#if matchesFilter !== ""}
-                {#each option[1].display as letter}
-                  {#if matchesFilter.includes(letter.toLowerCase())}
-                    <b>{letter}</b>
-                  {:else}
-                    <span>{letter}</span>
-                  {/if}
-                {/each}
-              {:else}
-                {option[1].display}
-              {/if}
-            </div>
-          {/if}
+        {#each filterOptions(options) as option (option[1].key)}
+          <div
+            class="option"
+            class:selected={single
+              ? value === option[0]
+              : value.includes(option[0])}
+            on:click={() => clicking(option[0])}>
+            {#if matchesFilter !== ""}
+              {#each option[1].display as letter}
+                {#if matchesFilter.includes(letter.toLowerCase())}
+                  <b>{letter}</b>
+                {:else}
+                  <span>{letter}</span>
+                {/if}
+              {/each}
+            {:else}
+              {option[1].display}
+            {/if}
+          </div>
         {/each}
       {/key}
     </div>
@@ -245,20 +284,21 @@
 
   .inputRow {
     display: flex;
+    border: 1px solid #a8a8a8;
+    border-radius: calc((1vh + 1vw) * 1);
+    padding: calc((1vh + 1vw) * 0.1);
+  }
+
+  .inputRow.focused {
+    border-color: #141619;
   }
 
   .selection {
-    padding: 0em 0.2em;
-    border-bottom: 0.15em solid #969696;
-    margin: 0.2em 0em 0em 0em;
     font-size: 1em;
     display: flex;
     flex: 1;
     flex-wrap: wrap;
-  }
-
-  .selection.focused {
-    border-color: #81d272;
+    align-items: center;
   }
 
   .selection input {
@@ -269,9 +309,10 @@
     padding: 0;
     vertical-align: top;
     flex: 1;
-    height: 1.7em;
-    font-family: Roboto, -apple-system, BlinkMacSystemFont, Segoe UI, Oxygen,
-      Ubuntu, Cantarell, Fira Sans, Droid Sans, Helvetica Neue, sans-serif;
+    font-family: inherit;
+    margin-left: 0.1em;
+    padding: 0.3em;
+    color: #151515;
   }
 
   ::-webkit-input-placeholder {
@@ -294,20 +335,19 @@
     opacity: 0.5;
   }
 
-  .selection .value + input {
-    margin-left: 0.1em;
-  }
-
   .selection .value {
     color: white;
-    background: #81d272;
+    background: #db3c00;
     margin: 0.1em;
-    border-radius: 0.2em;
+    border-radius: 100em;
+    font-weight: 500;
     display: flex;
+    align-items: center;
+    height: 1.7em;
   }
 
   .selection .value span {
-    padding: 0em 0.2em 0em 0.3em;
+    padding: 0 0.5em;
   }
 
   .selection .value button {
@@ -316,9 +356,15 @@
     outline: none;
     font-size: 1em;
     cursor: pointer;
-    padding: 0em;
-    width: 1.5em;
-    height: 1.5em;
+    width: 1.8em;
+    padding: 0.3em;
+    height: 100%;
+  }
+
+  .selection .value button:hover {
+    background-color: #a82e00;
+    border-top-right-radius: 100em;
+    border-bottom-right-radius: 100em;
   }
 
   .selection .value button svg {
@@ -328,21 +374,20 @@
     height: 100%;
   }
 
-  .selection .value button svg:hover {
-    fill: #5d9b52;
+  .options {
+    margin: calc((1vh + 1vw) * 0.3) 0 0;
   }
 
   .list {
     display: none;
     position: absolute;
-    overflow: hidden;
     background: white;
-    width: 100%;
-    border-radius: 0 0 0.5em 0.5em;
-    box-shadow: #afafaf 0em 0.4em 0.4em;
     z-index: 100;
     max-height: 10em;
     overflow-y: scroll;
+    border-radius: calc((1vh + 1vw) * 0.3);
+    box-shadow: 0 0 8px 0 rgb(0 0 0 / 3%), 0 8px 32px 0 rgb(16 33 60 / 24%);
+    font-size: 0.8em;
   }
 
   .list.focused {
@@ -350,18 +395,21 @@
   }
 
   .list .option {
-    padding: 0.1em 0.5em;
-  }
-
-  .list .option:hover {
-    background: #5d9b52;
-    color: white !important;
+    padding: 0.2em 1.2em;
     cursor: pointer;
   }
 
+  .list .option:hover {
+    background-color: rgba(21, 21, 21, 0.1);
+  }
+
   .list .option.selected {
-    font-weight: 600;
-    color: #81d272;
+    color: #953000;
+    background-color: #fff0ef;
+  }
+
+  .list .option.selected:hover {
+    background-color: #ffd6d1;
   }
 
   .inputRow > button {
@@ -384,7 +432,7 @@
   }
 
   .inputRow > button.focused svg {
-    fill: #81d272;
+    fill: #db3c00;
     transform: rotate(0deg);
   }
 </style>

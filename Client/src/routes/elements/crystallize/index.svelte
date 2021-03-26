@@ -1,16 +1,17 @@
 <script lang="ts">
-  import CustomElement from "./../_shared/customElement/customElement.svelte";
-  import { translate } from "../../../utilities/translateStore";
-  import Loading from "../../../shared/loading.svelte";
-  import translations from "./_resources";
-  import sharedTranslations from "../_shared/resources";
-  import ObjectTile from "../_shared/objectTile.svelte";
-  import type { IPriceVariant, IProduct, IQueryRoot } from "./_crystallize";
   import { GraphQLClient, gql } from "graphql-request";
   import { fade } from "svelte/transition";
-  import Invalid from "../_shared/customElement/invalid.svelte";
   import { debounce } from "lodash";
-  import type { IContext } from "../_shared/customElement/customElement";
+
+  import type { IPriceVariant, IProduct, IQueryRoot } from "./_crystallize";
+  import Invalid from "../../../shared/components/customElement/invalid.svelte";
+  import CustomElement from "../../../shared/components/customElement/customElement.svelte";
+  import { translate } from "../../../shared/stores/translate";
+  import Loading from "../../../shared/components/loading.svelte";
+  import sharedTranslations from "../../../shared/components/customElement/resources";
+  import type { IContext } from "../../../shared/components/customElement/customElement";
+  import ObjectTile from "../../../shared/components/objectTile.svelte";
+  import translations from "./_resources";
 
   interface ICrystallizeConfig {
     graphqlEndpoint: string;
@@ -95,7 +96,7 @@
     }).format(price);
   };
 
-  const t = translate(translations, [sharedTranslations]);
+  const t = translate([translations, sharedTranslations]);
 </script>
 
 <CustomElement bind:value bind:config bind:context bind:disabled>
@@ -104,30 +105,31 @@
       <div class="group">
         {#if !listOpen}
           <button class="button" on:click={() => (listOpen = true)}>
-            {$t('open')}
+            {$t("open")}
           </button>
         {:else}
-          <button class="button" on:click={closeList}> {$t('close')} </button>
+          <button class="button" on:click={closeList}> {$t("close")} </button>
         {/if}
         {#if value.product}
           <button
             class="button destructive"
             in:fade|local
             on:click={() => (value.product = undefined)}>
-            {$t('clear')}
+            {$t("clear")}
           </button>
         {/if}
       </div>
       <div class="group column">
         {#if listOpen}
           <div class="group" transition:fade>
-            <label class="group column filter"><div class="label">
-                {$t('search')}
+            <label class="group column filter"
+              ><div class="label">
+                {$t("search")}
               </div>
               <input
                 class="input"
                 type="text"
-                placeholder={$t('placeholder')}
+                placeholder={$t("placeholder")}
                 bind:value={rawFilter} />
             </label>
           </div>
@@ -156,7 +158,7 @@
     {#if value.product}
       <div class="group" transition:fade>
         <div class="group column">
-          <div>{$t('previewDescription')}</div>
+          <div>{$t("previewDescription")}</div>
           <div class="group">
             <div class="item">
               <img

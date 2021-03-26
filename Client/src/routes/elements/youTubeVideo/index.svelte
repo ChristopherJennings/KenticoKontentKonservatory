@@ -1,20 +1,21 @@
 <script lang="ts">
-  import CustomElement from "../_shared/customElement/customElement.svelte";
-  import { translate } from "../../../utilities/translateStore";
-  import Loading from "../../../shared/loading.svelte";
-  import translations from "./_resources";
-  import sharedTranslations from "../_shared/resources";
-  import ObjectTile from "../_shared/objectTile.svelte";
   import moment from "moment";
   import debounce from "lodash/debounce";
   import { fade, fly } from "svelte/transition";
-  import Invalid from "../_shared/customElement/invalid.svelte";
   import { onMount } from "svelte";
+
   import type {
     gapi,
     IYouTubeSearchListResponse,
     IYouTubeSearchResultSnippet,
   } from "./_gapi";
+  import Invalid from "../../../shared/components/customElement/invalid.svelte";
+  import CustomElement from "../../../shared/components/customElement/customElement.svelte";
+  import { translate } from "../../../shared/stores/translate";
+  import Loading from "../../../shared/components/loading.svelte";
+  import sharedTranslations from "../../../shared/components/customElement/resources";
+  import ObjectTile from "../../../shared/components/objectTile.svelte";
+  import translations from "./_resources";
 
   interface IYouTubeVideoConfig {
     apiKey: string;
@@ -73,7 +74,7 @@
     result = undefined;
   };
 
-  const t = translate(translations, [sharedTranslations]);
+  const t = translate([translations, sharedTranslations]);
 </script>
 
 <svelte:head>
@@ -87,17 +88,17 @@
       <div class="group">
         {#if !listOpen}
           <button class="button" on:click={() => (listOpen = true)}>
-            {$t('open')}
+            {$t("open")}
           </button>
         {:else}
-          <button class="button" on:click={closeList}> {$t('close')} </button>
+          <button class="button" on:click={closeList}> {$t("close")} </button>
         {/if}
         {#if value.video}
           <button
             class="button destructive"
             in:fade|local
             on:click={() => (value.video = undefined)}>
-            {$t('clear')}
+            {$t("clear")}
           </button>
         {/if}
       </div>
@@ -105,13 +106,14 @@
     <div class="group column">
       {#if listOpen}
         <div class="group" transition:fly={{ y: 80, duration: 400 }}>
-          <label class="group column filter"><div class="label">
-              {$t('search')}
+          <label class="group column filter"
+            ><div class="label">
+              {$t("search")}
             </div>
             <input
               class="input"
               type="text"
-              placeholder={$t('placeholder')}
+              placeholder={$t("placeholder")}
               bind:value={rawFilter} />
           </label>
         </div>
@@ -123,7 +125,7 @@
           {#each result.items as video (video.id)}
             <ObjectTile
               name={video.snippet.title}
-              detail={moment(video.snippet.publishedAt).format('LLL')}
+              detail={moment(video.snippet.publishedAt).format("LLL")}
               thumbnailUrl={video.snippet.thumbnails.medium.url}
               onClick={() => {
                 value.video = { ...video.snippet, videoId: video.id.videoId };
@@ -134,11 +136,11 @@
         <div class="group">
           {#if prevPageToken}
             <button class="button" on:click={() => (pageToken = prevPageToken)}>
-              {$t('previous')}
+              {$t("previous")}
             </button>
           {/if}
           <button class="button" on:click={() => (pageToken = nextPageToken)}>
-            {$t('next')}
+            {$t("next")}
           </button>
         </div>
       {/if}

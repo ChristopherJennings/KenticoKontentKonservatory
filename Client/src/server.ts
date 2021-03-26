@@ -9,12 +9,7 @@ import * as sapper from '@sapper/server';
 
 dotenv.config();
 
-const {
-  PORT,
-  NODE_ENV,
-  KONTENT_PROJECTID,
-  KONTENT_PREVIEWAPIKEY,
-} = process.env;
+const { PORT, NODE_ENV } = process.env;
 
 const dev = NODE_ENV === "development";
 
@@ -22,16 +17,13 @@ const server = polka().use(
   compression({ threshold: 0 }),
   sirv("static", { dev }),
   sapper.middleware({
-    session: () => ({
-      kontent: {
-        projectId: KONTENT_PROJECTID,
-        previewApiKey: KONTENT_PREVIEWAPIKEY,
-      },
-    }),
+    session: () => ({}),
   })
 );
 
 if (dev) {
+  process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
+
   createServer(
     {
       key: readFileSync("src/server.key"),
