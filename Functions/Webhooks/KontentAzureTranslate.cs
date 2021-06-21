@@ -1,12 +1,15 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.IO;
 using System.Linq;
+using System.Runtime.Serialization.Formatters.Binary;
 using System.Threading.Tasks;
 
 using Core;
 using Core.AzureTranslator.Services;
 using Core.KenticoKontent.Models.Management.Elements;
+using Core.KenticoKontent.Models.Management.Items;
 using Core.KenticoKontent.Models.Management.References;
 using Core.KenticoKontent.Models.Webhook;
 using Core.KenticoKontent.Services;
@@ -14,6 +17,7 @@ using Core.KenticoKontent.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Extensions.Logging;
+using Newtonsoft.Json;
 
 namespace Functions.Webhooks
 {
@@ -44,8 +48,7 @@ namespace Functions.Webhooks
                 "post",
                 Route = Routes.KontentAzureTranslate
             )] string body,
-            IDictionary<string, string> headers,
-            string languageCodename
+            IDictionary<string, string> headers
             )
         {
             try
@@ -67,11 +70,39 @@ namespace Functions.Webhooks
                         switch (message.Operation)
                         {
                             case "change_workflow_step":
-                                var translationLanguage = new CultureInfo(languageCodename).TwoLetterISOLanguageName;
+
+                                var languages = await kontentRepository.ListLanguages();
+                                var defaultLanguage = languages.FirstOrDefault(languages => languages.IsDefault);
+
+                                var workflowSteps = await kontentRepository.RetrieveWorkflowSteps();
+                                var translationReview = workflowSteps.FirstOrDefault(wf => wf.Name == "Translation Review");
+                                var translationReviewId = new IdReference(translationReview.Id!);
 
                                 foreach (var item in data.Items)
                                 {
-                                    await TranslateItem(item, languageCodename, translationLanguage);
+                                    if (item == null || item.Item == null) { break; }
+
+                                    var ItemIsDefaultLanguage = defaultLanguage?.Id == item?.Language?.Value;
+                                    if (!ItemIsDefaultLanguage)
+                                    {
+                                        break;
+                                    }
+
+                                    foreach (var language in languages)
+                                    {
+                                        var contentItem = await kontentRepository.RetrieveContentItem(item.Item);
+                                        var languageVariant = await kontentRepository.RetrieveLanguageVariant(new RetrieveLanguageVariantParameters
+                                        {
+                                            ItemReference = item.Item,
+                                            LanguageReference = item.Language,
+                                            TypeReference = contentItem.TypeReference
+                                        }, true);
+
+                                        if (language != null && language.Codename != null && languageVariant != null)
+                                        {
+                                            await TranslateItem(languageVariant, language.Codename, translationReviewId, language.IsDefault);
+                                        }
+                                    }
                                 }
                                 break;
                         }
@@ -94,97 +125,98 @@ namespace Functions.Webhooks
             }
         }
 
-        private async Task TranslateItem(ItemObject item, string languageCodename, string translationLanguage)
+        private async Task TranslateItem(LanguageVariant languageVariant, string languageCodename, Reference? targetWorkflowStep, bool isDefault)
         {
-            if (item.Item == null)
+            if (!isDefault)
             {
-                throw new ArgumentNullException(nameof(item.Item));
-            }
+                var translationLanguage = new CultureInfo(languageCodename).TwoLetterISOLanguageName;
 
-            var languageVariant = await kontentRepository.RetrieveLanguageVariant(new RetrieveLanguageVariantParameters
-            {
-                ItemReference = item.Item,
-                LanguageReference = item.Language
-            });
-
-            if (languageVariant == null)
-            {
-                throw new NotImplementedException("Variant could not be retrieved.");
-            }
-
-            if (languageVariant.Elements == null)
-            {
-                throw new NotImplementedException("Variant does not have elements.");
-            }
-
-            foreach (var element in languageVariant.Elements)
-            {
-                switch (element)
+                if (languageVariant == null)
                 {
-                    case RichTextElement richTextElement:
-                        {
-                            var value = richTextElement.Value;
+                    throw new NotImplementedException("Variant could not be retrieved.");
+                }
 
-                            if (value?.Length >= 5000)
+                if (languageVariant.Elements == null)
+                {
+                    throw new NotImplementedException("Variant does not have elements.");
+                }
+
+                foreach (var element in languageVariant.Elements)
+                {
+                    switch (element)
+                    {
+                        case RichTextElement richTextElement:
                             {
-                                var parts = textAnalyzer.SplitHtml(value);
-                                var longResult = "";
+                                var value = richTextElement.Value;
 
-                                foreach (var part in parts)
+                                if (value?.Length >= 5000)
                                 {
-                                    var (translated, translation) = await Translate(part, translationLanguage);
+                                    var parts = textAnalyzer.SplitHtml(value);
+                                    var longResult = "";
 
-                                    if (translated)
+                                    foreach (var part in parts)
                                     {
-                                        longResult += translation;
-                                    };
+                                        var (translated, translation) = await Translate(part, translationLanguage);
+
+                                        if (translated)
+                                        {
+                                            longResult += translation;
+                                        };
+                                    }
+
+                                    if (!string.IsNullOrWhiteSpace(longResult))
+                                    {
+                                        richTextElement.Value = longResult;
+                                    }
+
+                                    break;
                                 }
 
-                                if (!string.IsNullOrWhiteSpace(longResult))
+                                var result = await Translate(richTextElement.Value, translationLanguage);
+
+                                if (result.translated)
                                 {
-                                    richTextElement.Value = longResult;
-                                }
-
+                                    richTextElement.Value = result.translation;
+                                };
                                 break;
                             }
 
-                            var result = await Translate(richTextElement.Value, translationLanguage);
-
-                            if (result.translated)
+                        case UrlSlugElement urlSlugElement:
                             {
-                                richTextElement.Value = result.translation;
-                            };
-                            break;
-                        }
+                                var (translated, translation) = await Translate(urlSlugElement.Value, translationLanguage);
 
-                    case UrlSlugElement urlSlugElement:
-                        {
-                            var (translated, translation) = await Translate(urlSlugElement.Value, translationLanguage);
+                                if (translated)
+                                {
+                                    urlSlugElement.Value = translation.Replace(" ", "-");
+                                };
+                                break;
+                            }
 
-                            if (translated)
+                        case TextElement textElement:
                             {
-                                urlSlugElement.Value = translation.Replace(" ", "-");
-                            };
-                            break;
-                        }
+                                var (translated, translation) = await Translate(textElement.Value, translationLanguage);
 
-                    case TextElement textElement:
-                        {
-                            var (translated, translation) = await Translate(textElement.Value, translationLanguage);
-
-                            if (translated)
-                            {
-                                textElement.Value = translation;
-                            };
-                            break;
-                        }
+                                if (translated)
+                                {
+                                    textElement.Value = translation;
+                                };
+                                break;
+                            }
+                    }
                 }
+
+                await kontentRepository.UpsertLanguageVariant(new UpsertLanguageVariantParameters
+                {
+                    LanguageReference = new CodenameReference(languageCodename),
+                    Variant = languageVariant
+                });
             }
 
-            await kontentRepository.UpsertLanguageVariant(new UpsertLanguageVariantParameters
+            await kontentRepository.ChangeWorkflowStepLanguageVariant(new ChangeWorkflowStepParameters
             {
                 LanguageReference = new CodenameReference(languageCodename),
-                Variant = languageVariant
+                Variant = languageVariant,
+                WorkflowStepReference = targetWorkflowStep
             });
         }
 

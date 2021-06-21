@@ -24,7 +24,7 @@ namespace Core.KenticoKontent.Services
 
         Task<IEnumerable<LanguageVariant>> ListVariantsByType(Reference typeReference);
 
-        Task<LanguageVariant?> RetrieveLanguageVariant(RetrieveLanguageVariantParameters retrieveLanguageVariantParameters);
+        Task<LanguageVariant?> RetrieveLanguageVariant(RetrieveLanguageVariantParameters retrieveLanguageVariantParameters, bool ignoreCache = false);
 
         ExternalIdReference NewExternalIdReference();
 
@@ -33,6 +33,8 @@ namespace Core.KenticoKontent.Services
         Task UpsertLanguageVariant(UpsertLanguageVariantParameters upsertLanguageVariantParameters);
 
         Task<IEnumerable<ContentType>> ListContentTypes();
+        
+        Task<IEnumerable<Language>> ListLanguages();
 
         Task<ContentType> RetrieveContentType(Reference typeReference);
 

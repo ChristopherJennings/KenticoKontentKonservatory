@@ -371,25 +371,40 @@ namespace KenticoKontent.Services
             return allVariants;
         }
 
-        public async Task<LanguageVariant?> RetrieveLanguageVariant(RetrieveLanguageVariantParameters retrieveLanguageVariantParameters)
+        public async Task<LanguageVariant?> RetrieveLanguageVariant(RetrieveLanguageVariantParameters retrieveLanguageVariantParameters, bool ignoreCache = false)
         {
             var (itemReference, typeReference, languageReference) = retrieveLanguageVariantParameters;
 
-            var variant = await Cache(
-                () => kontentRateLimiter.WithRetry(() => Get($"items/{itemReference}/variants/{languageReference}")),
-                itemReference + languageReference,
-                async response =>
+            LanguageVariant? variant = null;
+            if (ignoreCache)
+            {
+                var response = await kontentRateLimiter.WithRetry(() => Get($"items/{itemReference}/variants/{languageReference}"));
+
+                if (response.StatusCode == HttpStatusCode.NotFound)
                 {
-                    if (response.StatusCode == HttpStatusCode.NotFound)
+                    return null;
+                }
+
+                await ThrowIfNotSuccessStatusCode(response);
+                variant = await response.Content.ReadAsAsync<LanguageVariant>();
+            }
+            else
+            {
+                variant = await Cache(
+                    () => kontentRateLimiter.WithRetry(() => Get($"items/{itemReference}/variants/{languageReference}")),
+                    itemReference + languageReference,
+                    async response =>
                     {
-                        return null;
-                    }
+                        if (response.StatusCode == HttpStatusCode.NotFound)
+                        {
+                            return null;
+                        }
 
-                    await ThrowIfNotSuccessStatusCode(response);
+                        await ThrowIfNotSuccessStatusCode(response);
 
-                    return await response.Content.ReadAsAsync<LanguageVariant>();
-                });
-
+                        return await response.Content.ReadAsAsync<LanguageVariant>();
+                    });
+            }
             if (variant == null)
             {
                 return null;
@@ -478,6 +493,28 @@ namespace KenticoKontent.Services
             CacheDictionary.Add(nameof(ListContentTypes), allTypes);
 
             return allTypes;
+        }
+
+        public async Task<IEnumerable<Language>> ListLanguages()
+        {
+            if (CacheDictionary.TryGetValue(nameof(ListLanguages), out var item) && item is IEnumerable<Language> cachedTypes)
+            {
+                return cachedTypes;
+            }
+
+            var allLanguages = new List<Language>();
+
+            await EnumerateListing<ListLanguagesResponse>(() => Get($"languages"), responseObject =>
+            {
+                if (responseObject.Languages != null)
+                {
+                    allLanguages.AddRange(responseObject.Languages);
+                }
+            });
+
+            CacheDictionary.Add(nameof(ListLanguages), allLanguages);
+
+            return allLanguages;
         }
 
         public async Task<ContentType> RetrieveContentType(Reference typeReference)
